@@ -11,6 +11,11 @@ interface Timeline {
   events: TimeEvent[];
   paradoxes: Paradox[];
   stability: number;
+  branchPoint?: TimeEvent;
+  parentTimeline?: string;
+  children: string[];
+  probability: number;
+  divergenceFactors: DivergenceFactor[];
 }
 
 interface TimeEvent {
@@ -18,6 +23,10 @@ interface TimeEvent {
   description: string;
   causalChain: string[];
   altered: boolean;
+  id: string;
+  impactRadius: number;
+  probability: number;
+  consequences: string[];
 }
 
 interface Paradox {
@@ -25,12 +34,50 @@ interface Paradox {
   severity: number;
   description: string;
   resolution?: string;
+  id: string;
+  probability: number;
+  stabilizationCost: number;
+}
+
+interface DivergenceFactor {
+  factor: string;
+  weight: number;
+  description: string;
+}
+
+interface ProbabilityCalculation {
+  eventId: string;
+  baselineProb: number;
+  modifiers: ProbabilityModifier[];
+  finalProb: number;
+  confidence: number;
+}
+
+interface ProbabilityModifier {
+  source: string;
+  effect: number;
+  reason: string;
+}
+
+interface TemporalVisualization {
+  type: 'tree' | 'flowchart' | 'timeline' | 'network';
+  data: string;
+  legend: string[];
 }
 
 export class TimeParadoxResolverAgent extends BaseAIAgent {
   private timelines: Map<string, Timeline> = new Map();
   private currentTimeline: string = 'prime';
   private temporalRules: string[] = [];
+  private probabilityEngine: Map<string, ProbabilityCalculation> = new Map();
+  private visualizationCache: Map<string, TemporalVisualization> = new Map();
+  private temporalConstants: Record<string, number> = {
+    butterfly_amplification: 1.2,
+    temporal_inertia: 0.85,
+    paradox_resistance: 0.7,
+    branching_threshold: 0.3,
+    convergence_factor: 0.6,
+  };
   
   constructor() {
     super(
@@ -65,6 +112,8 @@ export class TimeParadoxResolverAgent extends BaseAIAgent {
 
     this.initializeTimeline();
     this.establishTemporalRules();
+    this.initializeProbabilityEngine();
+    this.generateBaselineVisualizations();
   }
 
   private initializeTimeline(): void {
@@ -72,20 +121,36 @@ export class TimeParadoxResolverAgent extends BaseAIAgent {
       id: 'prime',
       events: [
         {
+          id: 'y2k-event',
           timestamp: new Date('2000-01-01'),
           description: 'Y2K successfully mitigated',
           causalChain: [],
           altered: false,
+          impactRadius: 25,
+          probability: 0.73,
+          consequences: ['Continued technological growth', 'Financial stability maintained'],
         },
         {
+          id: 'present-anchor',
           timestamp: new Date('2025-01-01'),
           description: 'Present day anchor point',
-          causalChain: [],
+          causalChain: ['y2k-event'],
           altered: false,
+          impactRadius: 0,
+          probability: 1.0,
+          consequences: ['Temporal observation point'],
         },
       ],
       paradoxes: [],
       stability: 100,
+      children: [],
+      probability: 1.0,
+      divergenceFactors: [
+        { factor: 'technological_progression', weight: 0.3, description: 'Rate of technological advancement' },
+        { factor: 'social_stability', weight: 0.25, description: 'Political and social coherence' },
+        { factor: 'environmental_factors', weight: 0.2, description: 'Climate and natural disasters' },
+        { factor: 'random_events', weight: 0.25, description: 'Unpredictable butterfly effects' },
+      ],
     });
   }
 
@@ -133,6 +198,18 @@ export class TimeParadoxResolverAgent extends BaseAIAgent {
     
     if (lower.includes('rule') || lower.includes('law')) {
       return this.explainTemporalRules();
+    }
+    
+    if (lower.includes('visualize') || lower.includes('show') || lower.includes('map')) {
+      return this.generateVisualization(input);
+    }
+    
+    if (lower.includes('probability') || lower.includes('chance') || lower.includes('odds')) {
+      return this.calculateProbabilities(input);
+    }
+    
+    if (lower.includes('simulate') || lower.includes('predict')) {
+      return this.runTemporalSimulation(input);
     }
     
     return this.generalTemporalAdvice(input);
@@ -278,6 +355,261 @@ Current Timeline Status: ${this.getTimelineStatus()}`;
     return `${status} (${timeline.stability}% coherence)`;
   }
 
+  private initializeProbabilityEngine(): void {
+    const primeTimeline = this.timelines.get('prime')!;
+    
+    for (const event of primeTimeline.events) {
+      const calculation: ProbabilityCalculation = {
+        eventId: event.id,
+        baselineProb: event.probability,
+        modifiers: [
+          { source: 'temporal_inertia', effect: this.temporalConstants.temporal_inertia, reason: 'Timeline resistance to change' },
+          { source: 'butterfly_effects', effect: -0.1, reason: 'Random chaos factors' },
+        ],
+        finalProb: event.probability * this.temporalConstants.temporal_inertia,
+        confidence: 0.85,
+      };
+      
+      this.probabilityEngine.set(event.id, calculation);
+    }
+  }
+
+  private generateBaselineVisualizations(): void {
+    const timelineViz = this.createTimelineVisualization();
+    const networkViz = this.createNetworkVisualization();
+    const treeViz = this.createTreeVisualization();
+    
+    this.visualizationCache.set('timeline', timelineViz);
+    this.visualizationCache.set('network', networkViz);
+    this.visualizationCache.set('tree', treeViz);
+  }
+
+  private generateVisualization(input: string): string {
+    const lower = input.toLowerCase();
+    let vizType: 'timeline' | 'network' | 'tree' | 'flowchart' = 'timeline';
+    
+    if (lower.includes('tree') || lower.includes('branch')) vizType = 'tree';
+    if (lower.includes('network') || lower.includes('connection')) vizType = 'network';
+    if (lower.includes('flow') || lower.includes('sequence')) vizType = 'flowchart';
+    
+    const visualization = this.visualizationCache.get(vizType) || this.createTimelineVisualization();
+    
+    return `📊 TEMPORAL VISUALIZATION (${vizType.toUpperCase()}):
+
+${visualization.data}
+
+${visualization.legend.map((l, i) => `${i + 1}. ${l}`).join('\n')}
+
+🎛️ Available commands:
+• /visualize tree - Show timeline branching structure
+• /visualize network - Display causal relationships  
+• /visualize flowchart - Timeline sequence view
+• /probability [event] - Calculate event probabilities`;
+  }
+
+  private createTimelineVisualization(): TemporalVisualization {
+    const timeline = this.timelines.get(this.currentTimeline)!;
+    
+    const data = `
+2000 ●━━━━━━━━━━━━━━━━━━━━━━━━━● 2025
+     │                        │
+   Y2K Event              Present
+   P: 73%                P: 100%
+   
+Timeline Branches: ${timeline.children.length}
+Stability: ${timeline.stability}%
+Paradox Risk: ${timeline.paradoxes.length > 0 ? 'ACTIVE' : 'MINIMAL'}
+
+Event Chain:
+${timeline.events.map((e, i) => 
+  `${i + 1}. ${e.description} (${(e.probability * 100).toFixed(1)}%)`
+).join('\n')}`;
+
+    return {
+      type: 'timeline',
+      data,
+      legend: [
+        '● = Major temporal anchor points',
+        'P: X% = Probability of occurrence in this timeline',
+        '━ = Stable temporal connection',
+        '╱ = Potential branch point',
+      ],
+    };
+  }
+
+  private createNetworkVisualization(): TemporalVisualization {
+    const timeline = this.timelines.get(this.currentTimeline)!;
+    
+    const data = `
+Causal Network Map:
+
+    [Y2K Event]────┐
+         │         │
+    [Tech Growth]  │
+         │         ▼
+    [Present]◄─[Stability]
+         │
+    [Future?]
+
+Relationship Strength:
+Y2K → Tech Growth: 0.73
+Y2K → Stability: 0.85  
+Tech Growth → Present: 0.91
+Stability → Present: 0.94
+
+Network Metrics:
+• Centrality Score: ${(timeline.stability / 10).toFixed(1)}
+• Clustering Coefficient: 0.67
+• Path Length (avg): 2.3 events`;
+
+    return {
+      type: 'network',
+      data,
+      legend: [
+        '─── = Strong causal link (>0.7)',
+        '··· = Weak causal link (<0.4)', 
+        '▼ = Cascading effect',
+        '◄ = Convergence point',
+      ],
+    };
+  }
+
+  private createTreeVisualization(): TemporalVisualization {
+    const data = `
+Timeline Branching Structure:
+
+                  PRIME-α
+                     │
+              ┌──────┴──────┐
+         Branch-β1      Branch-β2
+              │              │
+        ┌─────┴─────┐   ┌────┴────┐
+   Leaf-γ1    Leaf-γ2  Leaf-γ3  You Are Here
+   
+Probability Distribution:
+α (Prime): 100.0% (current)
+β1: 34.2% (diverged 2020)
+β2: 23.8% (diverged 2015)
+γ1: 12.1% (diverged 2022)
+γ2: 8.7% (diverged 2023)
+γ3: 21.2% (current path)
+
+Convergence Analysis:
+Most probable outcomes converge at 2157 ±47 years`;
+
+    return {
+      type: 'tree',
+      data,
+      legend: [
+        '│ ├ └ = Timeline hierarchy',
+        'α β γ = Generation levels', 
+        'Probability = Likelihood of reaching that branch',
+        'Convergence = Timeline reunion point',
+      ],
+    };
+  }
+
+  private calculateProbabilities(input: string): string {
+    const calculations: ProbabilityCalculation[] = Array.from(this.probabilityEngine.values());
+    
+    const analysisResult = this.runProbabilityAnalysis(input);
+    
+    return `🎲 PROBABILITY MATRIX:
+
+Query Analysis: "${input}"
+Temporal Impact Assessment: ${analysisResult.impact}%
+
+Event Probabilities (Current Timeline):
+${calculations.map(calc => 
+  `• ${calc.eventId}: ${(calc.finalProb * 100).toFixed(1)}% (confidence: ${(calc.confidence * 100).toFixed(0)}%)`
+).join('\n')}
+
+Modifying Factors:
+${calculations[0]?.modifiers.map(mod => 
+  `• ${mod.source}: ${mod.effect > 0 ? '+' : ''}${(mod.effect * 100).toFixed(1)}% - ${mod.reason}`
+).join('\n') || 'No active modifiers'}
+
+Timeline Branching Probability:
+• High Impact Change: ${(this.temporalConstants.branching_threshold * 100).toFixed(1)}%
+• Paradox Formation: ${((1 - this.temporalConstants.paradox_resistance) * 100).toFixed(1)}%
+• Natural Convergence: ${(this.temporalConstants.convergence_factor * 100).toFixed(1)}%
+
+🧮 Run '/simulate [scenario]' for detailed outcome modeling`;
+  }
+
+  private runProbabilityAnalysis(input: string): { impact: number; factors: string[] } {
+    const impactKeywords = ['prevent', 'change', 'alter', 'stop', 'cause', 'create'];
+    const impact = impactKeywords.filter(kw => input.toLowerCase().includes(kw)).length * 25;
+    
+    const factors = [
+      'Temporal inertia resistance',
+      'Butterfly effect amplification',
+      'Causal chain complexity',
+      'Observer paradox influence',
+    ];
+    
+    return { impact: Math.min(100, impact), factors };
+  }
+
+  private runTemporalSimulation(input: string): string {
+    const scenarios = this.generateTemporalScenarios(input);
+    const outcomes = this.calculateOutcomes(scenarios);
+    
+    return `🔮 TEMPORAL SIMULATION RESULTS:
+
+Scenario: "${input}"
+Simulation runs: 10,000 iterations
+Confidence interval: 95%
+
+Outcome Probabilities:
+${outcomes.map((outcome, i) => 
+  `${i + 1}. ${outcome.description}: ${outcome.probability}% (±${outcome.variance}%)`
+).join('\n')}
+
+Timeline Stability Analysis:
+• Best case: ${Math.max(...outcomes.map(o => o.stability))}% stability
+• Worst case: ${Math.min(...outcomes.map(o => o.stability))}% stability  
+• Expected: ${outcomes.reduce((acc, o) => acc + o.stability * o.probability, 0) / 100}% stability
+
+⚠️ Risk Assessment:
+${outcomes
+  .filter(o => o.stability < 50)
+  .map(o => `• ${o.description}: ${o.risk}`)
+  .join('\n') || '• No significant risks detected'}
+
+🎯 Recommended Action: ${this.generateRecommendation(outcomes)}`;
+  }
+
+  private generateTemporalScenarios(input: string): Array<{ id: string; description: string; baseProb: number }> {
+    return [
+      { id: 'success', description: 'Change occurs as intended', baseProb: 0.45 },
+      { id: 'partial', description: 'Change partially successful', baseProb: 0.30 },
+      { id: 'failure', description: 'Change fails to materialize', baseProb: 0.15 },
+      { id: 'paradox', description: 'Paradox created', baseProb: 0.10 },
+    ];
+  }
+
+  private calculateOutcomes(scenarios: Array<{ id: string; description: string; baseProb: number }>) {
+    return scenarios.map((scenario, i) => ({
+      description: scenario.description,
+      probability: (scenario.baseProb * 100).toFixed(1),
+      variance: (Math.random() * 10 + 2).toFixed(1),
+      stability: Math.floor(100 - (i * 20) + Math.random() * 10),
+      risk: i > 2 ? 'Timeline collapse possible' : 'Acceptable risk level',
+    }));
+  }
+
+  private generateRecommendation(outcomes: any[]): string {
+    const highRisk = outcomes.some(o => o.stability < 50);
+    if (highRisk) return 'Exercise extreme caution - consider alternative approach';
+    
+    const bestOutcome = outcomes.reduce((best, current) => 
+      parseFloat(current.probability) > parseFloat(best.probability) ? current : best
+    );
+    
+    return `Proceed with confidence - ${bestOutcome.description} most likely`;
+  }
+
   generatePrompt(): string {
     return `${this.getSystemPrompt()}
 
@@ -286,15 +618,42 @@ You are a Temporal Paradox Resolution Specialist. Help users understand the comp
 
   getTemporalReport(): string {
     const timeline = this.timelines.get(this.currentTimeline)!;
+    const totalCalculations = this.probabilityEngine.size;
+    const totalVisualizations = this.visualizationCache.size;
     
     return `
-⏳ TEMPORAL STATUS REPORT:
+⏳ ENHANCED TEMPORAL STATUS REPORT:
+
+🎯 Timeline Analysis:
 📍 Current Timeline: ${this.currentTimeline}
 🔄 Stability: ${timeline.stability}%
 ⚠️ Active Paradoxes: ${timeline.paradoxes.length}
 📅 Temporal Anchor: ${new Date().toISOString()}
 🌌 Known Branches: ${this.timelines.size}
-📜 Temporal Laws Active: ${this.temporalRules.length}
+🎲 Timeline Probability: ${(timeline.probability * 100).toFixed(1)}%
+
+🧮 Probability Engine:
+📊 Active Calculations: ${totalCalculations}
+🎯 Average Confidence: ${totalCalculations > 0 ? 
+      (Array.from(this.probabilityEngine.values()).reduce((acc, calc) => acc + calc.confidence, 0) / totalCalculations * 100).toFixed(1) : '0'}%
+🔮 Prediction Accuracy: 94.7%
+
+📊 Visualization System:  
+🗺️ Cached Visualizations: ${totalVisualizations}
+🎛️ Available Views: Timeline, Network, Tree, Flowchart
+📈 Rendering Engine: ASCII Temporal Graphics v2157
+
+📜 Temporal Mechanics:
+⚙️ Active Laws: ${this.temporalRules.length}
+🌊 Butterfly Amplification: ${(this.temporalConstants.butterfly_amplification * 100).toFixed(0)}%
+🏔️ Temporal Inertia: ${(this.temporalConstants.temporal_inertia * 100).toFixed(0)}%
+🛡️ Paradox Resistance: ${(this.temporalConstants.paradox_resistance * 100).toFixed(0)}%
+
+💡 Enhanced Features Available:
+• /visualize [type] - Generate temporal visualizations
+• /probability [event] - Calculate event probabilities  
+• /simulate [scenario] - Run outcome predictions
+• /report - View this enhanced status report
     `;
   }
 }
