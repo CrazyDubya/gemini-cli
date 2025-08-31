@@ -6,6 +6,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/showcase.ts",
+    "launch": "tsx launch.ts",
+    "start": "tsx launch.ts",
     "test": "vitest"
   },
   "dependencies": {

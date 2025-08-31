@@ -18,6 +18,8 @@ export class DebuggerDuckAgent extends BaseAIAgent {
   private currentSession: DebugSession | null = null;
   private debugHistory: DebugSession[] = [];
   private patterns: Map<string, string[]> = new Map();
+  private commonMistakes: Map<string, number> = new Map();
+  private debuggingTips: string[] = [];
   
   constructor() {
     super(
@@ -236,6 +238,41 @@ You are a rubber duck debugger. Your role is to help programmers debug their cod
 Current session: ${this.currentSession ? 'Active debugging session' : 'No active session'}`;
   }
 
+  trackMistake(pattern: string): void {
+    this.commonMistakes.set(pattern, (this.commonMistakes.get(pattern) || 0) + 1);
+    
+    // Generate tip if this mistake is common
+    if (this.commonMistakes.get(pattern)! > 2) {
+      this.generateTip(pattern);
+    }
+  }
+
+  private generateTip(pattern: string): void {
+    const tips: Record<string, string> = {
+      'off-by-one': '💡 TIP: Always check array bounds and loop conditions. Remember arrays start at 0!',
+      'null-reference': '💡 TIP: Use optional chaining (?.) and nullish coalescing (??) operators',
+      'async-issue': '💡 TIP: Check if you need await. Use Promise.all() for parallel operations',
+      'state-mutation': '💡 TIP: Consider using immutable updates with spread operator or structuredClone',
+    };
+    
+    if (tips[pattern] && !this.debuggingTips.includes(tips[pattern])) {
+      this.debuggingTips.push(tips[pattern]);
+    }
+  }
+
+  suggestDebugStrategy(): string {
+    const strategies = [
+      '🔍 Binary Search: Comment out half the code to isolate the problem',
+      '📝 Print Debugging: Add console.logs at key points',
+      '🔄 Rubber Duck: Explain your code line by line out loud',
+      '🧪 Unit Test: Write a test that reproduces the bug',
+      '⏮️ Git Bisect: Find when the bug was introduced',
+      '🔨 Minimal Reproduction: Create the smallest code that shows the bug',
+    ];
+    
+    return strategies[Math.floor(Math.random() * strategies.length)];
+  }
+
   getDebugStats(): string {
     const totalSessions = this.debugHistory.length;
     const totalBreakthroughs = this.debugHistory.reduce((sum, s) => sum + s.breakthroughs.length, 0);
@@ -243,12 +280,17 @@ Current session: ${this.currentSession ? 'Active debugging session' : 'No active
       ? this.debugHistory.reduce((sum, s) => sum + s.questions.length, 0) / totalSessions 
       : 0;
     
+    const mostCommonMistake = Array.from(this.commonMistakes.entries())
+      .sort((a, b) => b[1] - a[1])[0];
+    
     return `
 🦆 Debug Statistics:
 📊 Total Sessions: ${totalSessions}
 💡 Breakthroughs: ${totalBreakthroughs}
 ❓ Avg Questions per Session: ${avgQuestionsPerSession.toFixed(1)}
 🔍 Patterns Detected: ${this.patterns.size}
+🎯 Most Common Issue: ${mostCommonMistake ? mostCommonMistake[0] : 'None yet'}
+💭 Tips Learned: ${this.debuggingTips.length}
     `;
   }
 }

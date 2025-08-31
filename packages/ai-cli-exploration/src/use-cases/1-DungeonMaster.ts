@@ -18,6 +18,8 @@ export class DungeonMasterAgent extends BaseAIAgent {
   private gameState: GameState;
   private worldLore: Map<string, string> = new Map();
   private encounterHistory: string[] = [];
+  private combatLog: string[] = [];
+  private savedGames: Map<string, GameState> = new Map();
 
   constructor() {
     super(
@@ -93,7 +95,11 @@ export class DungeonMasterAgent extends BaseAIAgent {
   private async generateResponse(input: string): Promise<string> {
     const action = this.parseAction(input);
     
-    if (action.type === 'combat') {
+    if (action.type === 'roll') {
+      return this.handleDiceRoll(action);
+    } else if (action.type === 'save') {
+      return this.handleSaveLoad(action);
+    } else if (action.type === 'combat') {
       return this.handleCombat(action);
     } else if (action.type === 'dialogue') {
       return this.handleDialogue(action);
@@ -109,7 +115,11 @@ export class DungeonMasterAgent extends BaseAIAgent {
   private parseAction(input: string): { type: string; details?: unknown } {
     const lowerInput = input.toLowerCase();
     
-    if (lowerInput.includes('attack') || lowerInput.includes('fight')) {
+    if (lowerInput.includes('roll') || lowerInput.includes('dice')) {
+      return { type: 'roll', details: input };
+    } else if (lowerInput.includes('save') || lowerInput.includes('load')) {
+      return { type: 'save', details: input };
+    } else if (lowerInput.includes('attack') || lowerInput.includes('fight')) {
       return { type: 'combat', details: input };
     } else if (lowerInput.includes('talk') || lowerInput.includes('ask')) {
       return { type: 'dialogue', details: input };
@@ -221,6 +231,57 @@ Current game state:
 - Recent encounters: ${this.encounterHistory.slice(-3).join(', ')}
 
 Respond as an immersive Dungeon Master. Create vivid descriptions, maintain narrative consistency, and react dynamically to player choices.`;
+  }
+
+  private handleDiceRoll(action: { type: string; details?: unknown }): string {
+    const input = String(action.details).toLowerCase();
+    const match = input.match(/d(\d+)/);
+    const sides = match ? parseInt(match[1]) : 20;
+    const roll = Math.floor(Math.random() * sides) + 1;
+    
+    let result = `🎲 Rolling D${sides}: ${roll}`;
+    
+    if (sides === 20) {
+      if (roll === 20) result += ' - CRITICAL SUCCESS! 💫';
+      else if (roll === 1) result += ' - CRITICAL FAILURE! 💀';
+      else if (roll >= 15) result += ' - Great roll!';
+      else if (roll <= 5) result += ' - Unfortunate...';
+    }
+    
+    this.combatLog.push(`Rolled ${roll} on D${sides}`);
+    return result;
+  }
+
+  private handleSaveLoad(action: { type: string; details?: unknown }): string {
+    const input = String(action.details).toLowerCase();
+    
+    if (input.includes('save')) {
+      const saveId = `save_${Date.now()}`;
+      this.savedGames.set(saveId, JSON.parse(JSON.stringify(this.gameState)));
+      return `💾 Game saved! Save ID: ${saveId}\nUse 'load ${saveId}' to restore this point.`;
+    } else if (input.includes('load')) {
+      const saveId = input.match(/save_\d+/)?.[0];
+      if (saveId && this.savedGames.has(saveId)) {
+        this.gameState = JSON.parse(JSON.stringify(this.savedGames.get(saveId)));
+        return `📂 Game loaded from ${saveId}!\n${this.getGameSummary()}`;
+      }
+      return '❌ No save found with that ID.';
+    }
+    
+    return '💾 Available saves: ' + Array.from(this.savedGames.keys()).join(', ');
+  }
+
+  generateLoot(): string {
+    const loot = [
+      'enchanted sword (+1 attack)',
+      'healing potion (restore 50 HP)',
+      'mysterious scroll',
+      'bag of holding',
+      'ring of invisibility (3 charges)',
+    ];
+    const item = loot[Math.floor(Math.random() * loot.length)];
+    this.gameState.inventory.push(item);
+    return `🎁 You found: ${item}!`;
   }
 
   getGameSummary(): string {

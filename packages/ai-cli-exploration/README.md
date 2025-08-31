@@ -1,6 +1,40 @@
-# AI CLI Exploration - 12 Unexpected Use Cases for Gemini CLI
+# AI CLI Exploration - Interactive Multi-Agent System
 
-This MVP demonstrates 12 creative ways to repurpose an AI-powered CLI tool like Gemini CLI, showing how conversational AI can be adapted for diverse, unexpected applications beyond code generation.
+An innovative exploration of AI CLI capabilities featuring 12 unique AI agents with distinct personalities, plus seamless access to the original Gemini CLI - all from a single interactive launcher.
+
+## 🚀 Quick Start
+
+```bash
+# Navigate to the package
+cd packages/ai-cli-exploration
+
+# Install dependencies
+npm install
+
+# Launch the interactive system
+npm run launch
+```
+
+This will open an interactive menu where you can:
+- Choose from 12 specialized AI agents
+- Launch the original Gemini CLI
+- Save and resume sessions
+- Switch between agents seamlessly
+
+## 🎮 Interactive Features
+
+### Main Menu
+- **Numbered Selection (0-12)**: Choose an agent
+- **[0]**: Launch original Gemini CLI
+- **[s]**: Show saved sessions
+- **[q]**: Quit application
+
+### In-Agent Commands
+- **/help**: Show agent-specific help
+- **/reset**: Reset conversation
+- **/save**: Save current session
+- **/menu**: Return to main menu
+- **/exit**: Quit application
 
 ## Overview
 
@@ -17,9 +51,21 @@ Each use case showcases a unique AI agent with:
 **Category:** Gaming/Entertainment  
 An immersive text-based RPG experience with dynamic storytelling, persistent world state, NPC relationships, and adaptive narrative that responds to player choices.
 
+**Enhanced Features:**
+- Dice rolling system (roll d20, d6, etc.)
+- Save/load game functionality
+- Loot generation system
+- Combat logging
+
 ### 2. 🦆 Rubber Duck Debugger++
 **Category:** Development/Debugging  
 Enhanced rubber duck that uses the Socratic method, detects bug patterns, and guides developers to solve their own problems through thoughtful questioning.
+
+**Enhanced Features:**
+- Common mistake tracking and learning
+- Debug strategy suggestions
+- Personalized debugging tips
+- Pattern recognition statistics
 
 ### 3. ⏰ Time Paradox Resolver
 **Category:** Sci-Fi/Simulation  
