@@ -1,5 +1,5 @@
 {
-  "name": "@google/report-exploration",
+  "name": "@google/ai-cli-exploration",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
