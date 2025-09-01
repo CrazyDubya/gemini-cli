@@ -421,7 +421,7 @@ ${newLocation.description}
   }
 
   private generateLocationDescription(type: string): string {
-    const descriptions = {
+    const descriptions: Record<string, string> = {
       'Forgotten Temple': 'Crumbling stone pillars reach toward a darkened sky, covered in strange glyphs that seem to shift when not directly observed.',
       'Hidden Grove': 'A peaceful clearing where ancient trees form a natural cathedral, their leaves whispering secrets of ages past.',
       'Ancient Battlefield': 'Weathered bones and rusted weapons dot this scarred landscape, where the echoes of long-forgotten conflicts still linger.',
@@ -503,12 +503,12 @@ ${template}
 
   private generateNPCQuote(): string {
     const quotes = [
-      'I've been waiting for someone like you.',
-      'These are dangerous times, traveler.',
-      'I have information you might find useful.',
-      'The road ahead is treacherous.',
-      'Strange things have been happening lately.',
-      'You look like someone who can handle themselves.',
+      "I've been waiting for someone like you.",
+      "These are dangerous times, traveler.",
+      "I have information you might find useful.",
+      "The road ahead is treacherous.",
+      "Strange things have been happening lately.",
+      "You look like someone who can handle themselves."
     ];
     
     return quotes[Math.floor(Math.random() * quotes.length)];
