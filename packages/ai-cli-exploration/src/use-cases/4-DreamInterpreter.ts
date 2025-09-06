@@ -46,13 +46,6 @@ interface SymbolEvolution {
   confidence: number;
 }
 
-interface DreamAnalysis {
-  overallThemes: string[];
-  emotionalPattern: string;
-  symbolProgression: string[];
-  patternStrength: number;
-  recommendations: string[];
-}
 
 export class DreamInterpreterAgent extends BaseAIAgent {
   private symbols: Map<string, string> = new Map();
@@ -277,7 +270,7 @@ export class DreamInterpreterAgent extends BaseAIAgent {
   }
 
   private generateAdvancedInsight(dream: string, symbols: string[], emotions: string[], themes: string[]): string {
-    const patternCount = this.detectedPatterns.length;
+    // Pattern count for future statistical analysis
     const dreamCount = this.dreamJournal.size;
     
     if (dreamCount > 5) {

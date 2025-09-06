@@ -278,7 +278,7 @@ export class InteractiveLauncher {
         }
       } else {
         try {
-          const response = await this.currentAgent!.processInput(input);
+          const response = await this.currentAgent!.safeProcessInput(input);
           console.log(chalk.yellow(`\n${agentInfo.emoji}  Agent: `) + chalk.white(response));
         } catch (error) {
           console.log(chalk.red(`\n❌ Error: ${error}`));

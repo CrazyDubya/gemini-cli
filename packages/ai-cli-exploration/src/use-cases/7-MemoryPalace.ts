@@ -5,6 +5,7 @@
  */
 
 import { BaseAIAgent } from '../core/BaseAIAgent.js';
+import { PersistenceManager } from '../core/PersistenceManager.js';
 
 interface Room {
   name: string;
@@ -34,6 +35,7 @@ export class MemoryPalaceAgent extends BaseAIAgent {
   private memoryPaths: Map<string, MemoryPath> = new Map();
   private associationNetwork: Map<string, Set<string>> = new Map();
   private memoryStrengthDecay = 0.95;
+  private persistence: PersistenceManager;
 
   constructor() {
     super(
@@ -47,6 +49,7 @@ export class MemoryPalaceAgent extends BaseAIAgent {
       { canRemember: true }
     );
 
+    this.persistence = new PersistenceManager();
     this.initializePalace();
   }
 

@@ -5,6 +5,7 @@
  */
 
 import { BaseAIAgent } from '../core/BaseAIAgent.js';
+import { GitIntegration, type GitCommit } from '../core/GitIntegration.js';
 
 interface Commit {
   hash: string;
@@ -36,6 +37,9 @@ export class GitTimeTravelAgent extends BaseAIAgent {
   private timelines: Map<string, Timeline> = new Map();
   private conflictPatterns: Map<string, ConflictResolution[]> = new Map();
   private timelinePosition: number = 0;
+  private gitIntegration: GitIntegration;
+  private realCommits: GitCommit[] = [];
+  private currentRepo: string;
 
   constructor() {
     super(
@@ -48,49 +52,104 @@ export class GitTimeTravelAgent extends BaseAIAgent {
       },
       { canRemember: true, canMakeDecisions: true }
     );
+    
+    this.gitIntegration = new GitIntegration();
+    this.currentRepo = process.cwd();
+    this.initializeRepository();
+  }
+
+  private async initializeRepository(): Promise<void> {
+    try {
+      if (await this.gitIntegration.isGitRepository()) {
+        this.realCommits = await this.gitIntegration.getCommitHistory(100);
+        this.timelinePosition = 0;
+      }
+    } catch (error) {
+      console.warn('Failed to initialize repository:', error);
+    }
   }
 
   async processInput(input: string): Promise<string> {
     const lower = input.toLowerCase();
     
     if (lower.includes('blame')) {
-      return this.performGitBlame(input);
+      return await this.performGitBlame(input);
     } else if (lower.includes('bisect')) {
       return this.guideBisect(input);
     } else if (lower.includes('lost') || lower.includes('reflog')) {
-      return this.recoverLostWork();
+      return await this.recoverLostWork();
     } else if (lower.includes('timeline')) {
-      return this.visualizeTimeline(input);
+      return await this.visualizeTimeline(input);
     } else if (lower.includes('conflict')) {
-      return this.resolveConflict(input);
+      return await this.resolveConflict(input);
     } else if (lower.includes('impact')) {
       return this.analyzeCommitImpact(input);
     } else if (lower.includes('travel')) {
       return this.timeTravel(input);
     } else if (lower.includes('merge')) {
-      return this.predictMerge(input);
+      return await this.predictMerge(input);
+    } else if (lower.includes('status')) {
+      return await this.showRepositoryStatus();
     }
     
-    return this.explainGitHistory(input);
+    return await this.explainGitHistory(input);
   }
 
-  private performGitBlame(input: string): string {
-    return `🕵️ GIT ARCHAEOLOGY REPORT:
+  private async performGitBlame(input: string): Promise<string> {
+    // Extract file path from input
+    const fileMatch = input.match(/blame\s+([^\s]+)/);
+    const filePath = fileMatch?.[1] || 'README.md';
+    
+    try {
+      const blameInfo = await this.gitIntegration.getFileBlame(filePath);
+      
+      if (blameInfo.length === 0) {
+        return `🕵️ FILE NOT FOUND OR NOT IN REPOSITORY:
 
-The code you're investigating has a rich history:
+The file "${filePath}" couldn't be analyzed. It might not exist or isn't tracked by git.
 
-├─ Original Author: "optimistic-dev" (3 months ago)
-│  "Initial implementation - this will definitely work!"
-│
-├─ First Refactor: "senior-dev" (2 months ago)  
-│  "Fixed edge cases that definitely weren't going to happen"
-│
-└─ Latest Change: "panic-fix" (last week)
-   "HOTFIX: DON'T ASK, JUST MERGE"
+Try: 'blame <filename>' with a valid file path.`;
+      }
 
-Historical Context: This code survived 3 refactors, 2 framework migrations, and 1 coffee spill incident.
+      // Group by author and show recent changes
+      const authorStats = new Map<string, { lines: number; lastChange: Date }>();
+      
+      blameInfo.forEach(info => {
+        if (!authorStats.has(info.author)) {
+          authorStats.set(info.author, { lines: 0, lastChange: info.date });
+        }
+        const stats = authorStats.get(info.author)!;
+        stats.lines++;
+        if (info.date > stats.lastChange) {
+          stats.lastChange = info.date;
+        }
+      });
 
-Recommendation: Approach with respect - it's battle-tested.`;
+      const topAuthors = Array.from(authorStats.entries())
+        .sort((a, b) => b[1].lines - a[1].lines)
+        .slice(0, 5);
+
+      return `🕵️ GIT ARCHAEOLOGY REPORT: ${filePath}
+
+📊 CODE OWNERSHIP:
+${topAuthors.map(([author, stats]) => 
+  `├─ ${author}: ${stats.lines} lines (last: ${this.formatRelativeDate(stats.lastChange)})`
+).join('\n')}
+
+📜 RECENT COMMITS AFFECTING THIS FILE:
+${this.realCommits.slice(0, 3).map(commit => 
+  `├─ ${commit.shortHash} - ${commit.author} (${this.formatRelativeDate(commit.date)})
+│  "${commit.message}"`
+).join('\n')}
+
+🔍 Total lines analyzed: ${blameInfo.length}
+
+Use 'analyze conflicts' to check for potential merge issues.`;
+    } catch (error) {
+      return `❌ Failed to analyze file: ${error}
+
+Make sure you're in a git repository and the file exists.`;
+    }
   }
 
   private guideBisect(input: string): string {
@@ -114,52 +173,6 @@ Test this commit and tell me:
 The bug was introduced when someone thought they were "just cleaning up".`;
   }
 
-  private recoverLostWork(): string {
-    return `💾 LOST COMMIT RECOVERY:
-
-Searching the git reflog quantum realm...
-
-Found in the shadow realm:
-├─ deed5h4d "WIP: This was working I swear"
-├─ c0ffee42 "Experimental feature that was too good"
-└─ 1337c0de "DO NOT MERGE (but it's actually good)"
-
-To resurrect: 'git cherry-pick <hash>'
-To explore: 'git checkout <hash>'
-To forget: Already happening naturally
-
-Remember: In Git, nothing is truly lost, just strategically hidden.`;
-  }
-
-  private explainGitHistory(input: string): string {
-    const timeline = this.generateSampleTimeline();
-    return `📚 GIT TIMELINE VISUALIZATION:
-
-main: ─●──●──●──●──●──●──●─┐
-                            │ (merge)
-feature: └──●──●──●──●──●──●─┘
-
-The repository tells a story:
-- Chapter 1: "The Optimistic Beginning" (500 commits)
-- Chapter 2: "The Great Refactoring" (200 commits)
-- Chapter 3: "Regression Season" (300 commits)
-- Chapter 4: "The Stabilization" (you are here)
-
-Notable events:
-🔥 The Great Force Push of March (173 commits rewrote)
-🎭 The Merge Conflict Drama (lasted 3 days)
-✨ The Perfect Commit (still referenced in documentation)
-
-Your place in history: Contributing to Chapter 4.`;
-  }
-  
-  private generateSampleTimeline(): Timeline {
-    return {
-      branch: 'main',
-      commits: [],
-      mergePoints: []
-    };
-  }
   
   private visualizeTimeline(input: string): string {
     const branches = ['main', 'feature/awesome', 'hotfix/urgent', 'experiment/wild'];
@@ -366,6 +379,131 @@ ${this.getHistoricalContext(this.timelinePosition)}
 🔴 Avoid: Friday afternoon (nobody wants weekend fixes)
 
 💡 Pro tip: Run 'conflict-check' before actual merge to preview issues.`;
+  }
+
+  private formatRelativeDate(date: Date): string {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'today';
+    if (diffDays === 1) return 'yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+    return `${Math.floor(diffDays / 365)} years ago`;
+  }
+
+  private async showRepositoryStatus(): Promise<string> {
+    try {
+      const branches = await this.gitIntegration.getBranches();
+      const changedFiles = await this.gitIntegration.getChangedFiles();
+      const stagedFiles = await this.gitIntegration.getStagedFiles();
+      const conflicts = await this.gitIntegration.getConflictedFiles();
+      
+      return `📊 REPOSITORY STATUS:
+
+🌿 Current Branch: ${branches.current}
+🌳 Available Branches: ${branches.all.length} (${branches.all.slice(0, 3).join(', ')}${branches.all.length > 3 ? '...' : ''})
+
+📝 Working Directory:
+• Modified files: ${changedFiles.length}
+• Staged files: ${stagedFiles.length}
+• Conflicted files: ${conflicts.length}
+
+📈 Recent Activity:
+${this.realCommits.slice(0, 5).map(commit => 
+  `• ${commit.shortHash} - ${commit.message.substring(0, 50)}... (${this.formatRelativeDate(commit.date)})`
+).join('\n')}
+
+${conflicts.length > 0 ? '⚠️  Conflicts detected! Use "analyze conflicts" for details.' : '✅ No conflicts detected.'}`;
+    } catch (error) {
+      return `❌ Unable to get repository status. Make sure you're in a git repository.`;
+    }
+  }
+
+  private async recoverLostWork(): Promise<string> {
+    try {
+      // Search for commits that might be "lost"
+      const recentCommits = await this.gitIntegration.getCommitHistory(50);
+      const wipCommits = recentCommits.filter(c => 
+        c.message.toLowerCase().includes('wip') || 
+        c.message.toLowerCase().includes('work in progress') ||
+        c.message.toLowerCase().includes('temp')
+      );
+
+      if (wipCommits.length === 0) {
+        return `💾 NO LOST WORK DETECTED:
+
+Your commit history looks clean! No obvious work-in-progress commits found.
+
+💡 Pro tip: If you're looking for specific lost work, try:
+• "search [keyword]" to find commits by message
+• "timeline" to see the full history
+• Check the git reflog if you've done recent resets`;
+      }
+
+      return `💾 POTENTIAL LOST WORK RECOVERED:
+
+Found ${wipCommits.length} work-in-progress commits:
+
+${wipCommits.map(commit => 
+  `├─ ${commit.shortHash} "${commit.message}" (${this.formatRelativeDate(commit.date)})
+│  Author: ${commit.author}
+│  Files: ${commit.filesChanged}, +${commit.insertions}/-${commit.deletions}`
+).join('\n')}
+
+🔧 RECOVERY OPTIONS:
+• 'git cherry-pick <hash>' to apply changes
+• 'git show <hash>' to see what changed
+• 'git checkout <hash>' to explore that state
+
+These commits might contain valuable work that wasn't merged!`;
+    } catch (error) {
+      return `❌ Failed to search for lost work: ${error}`;
+    }
+  }
+
+  private async explainGitHistory(input: string): Promise<string> {
+    if (this.realCommits.length === 0) {
+      return `📚 GIT TIMELINE: Not a Git Repository
+
+You're not currently in a git repository, or the repository has no commits yet.
+
+🚀 To get started:
+• 'git init' to initialize a repository
+• 'git clone <url>' to clone an existing repository
+• Navigate to a git repository directory
+
+Once you're in a repository, I can show you the real timeline!`;
+    }
+
+    const totalCommits = this.realCommits.length;
+    const authors = new Set(this.realCommits.map(c => c.author));
+    const timeSpan = this.realCommits.length > 1 
+      ? this.formatRelativeDate(this.realCommits[this.realCommits.length - 1].date)
+      : 'recently started';
+
+    return `📚 REAL GIT TIMELINE ANALYSIS:
+
+Repository History:
+• Total commits: ${totalCommits}
+• Contributors: ${authors.size}
+• Project age: ${timeSpan}
+• Average commits per author: ${Math.round(totalCommits / authors.size)}
+
+🏗️ RECENT DEVELOPMENT ACTIVITY:
+${this.realCommits.slice(0, 10).map((commit, i) => 
+  `${i === 0 ? '━━' : '├─'} ${commit.shortHash} ${commit.message.substring(0, 60)}${commit.message.length > 60 ? '...' : ''}
+${'  '}📅 ${this.formatRelativeDate(commit.date)} by ${commit.author}
+${'  '}📊 ${commit.filesChanged} files, +${commit.insertions}/-${commit.deletions} lines`
+).join('\n')}
+
+💡 COMMANDS TO TRY:
+• 'blame <filename>' - See who wrote what
+• 'conflicts' - Check for merge conflicts  
+• 'status' - Current repository state
+• 'timeline' - Visual branch timeline`;
   }
 
   generatePrompt(): string {

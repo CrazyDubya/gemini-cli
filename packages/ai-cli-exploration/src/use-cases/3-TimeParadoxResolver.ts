@@ -224,6 +224,9 @@ export class TimeParadoxResolverAgent extends BaseAIAgent {
         type: 'butterfly',
         severity: impact.severity,
         description: `Proposed change: "${input}"`,
+        id: `paradox_${Date.now()}`,
+        probability: Math.random() * 0.8 + 0.2,
+        stabilizationCost: impact.severity * 10
       };
       timeline.paradoxes.push(paradox);
       timeline.stability -= impact.severity / 2;
@@ -363,10 +366,10 @@ Current Timeline Status: ${this.getTimelineStatus()}`;
         eventId: event.id,
         baselineProb: event.probability,
         modifiers: [
-          { source: 'temporal_inertia', effect: this.temporalConstants.temporal_inertia, reason: 'Timeline resistance to change' },
+          { source: 'temporal_inertia', effect: this.temporalConstants['temporal_inertia'], reason: 'Timeline resistance to change' },
           { source: 'butterfly_effects', effect: -0.1, reason: 'Random chaos factors' },
         ],
-        finalProb: event.probability * this.temporalConstants.temporal_inertia,
+        finalProb: event.probability * this.temporalConstants['temporal_inertia'],
         confidence: 0.85,
       };
       
@@ -530,9 +533,9 @@ ${calculations[0]?.modifiers.map(mod =>
 ).join('\n') || 'No active modifiers'}
 
 Timeline Branching Probability:
-• High Impact Change: ${(this.temporalConstants.branching_threshold * 100).toFixed(1)}%
-• Paradox Formation: ${((1 - this.temporalConstants.paradox_resistance) * 100).toFixed(1)}%
-• Natural Convergence: ${(this.temporalConstants.convergence_factor * 100).toFixed(1)}%
+• High Impact Change: ${(this.temporalConstants['branching_threshold'] * 100).toFixed(1)}%
+• Paradox Formation: ${((1 - this.temporalConstants['paradox_resistance']) * 100).toFixed(1)}%
+• Natural Convergence: ${(this.temporalConstants['convergence_factor'] * 100).toFixed(1)}%
 
 🧮 Run '/simulate [scenario]' for detailed outcome modeling`;
   }
@@ -592,8 +595,8 @@ ${outcomes
   private calculateOutcomes(scenarios: Array<{ id: string; description: string; baseProb: number }>) {
     return scenarios.map((scenario, i) => ({
       description: scenario.description,
-      probability: (scenario.baseProb * 100).toFixed(1),
-      variance: (Math.random() * 10 + 2).toFixed(1),
+      probability: parseFloat((scenario.baseProb * 100).toFixed(1)),
+      variance: parseFloat((Math.random() * 10 + 2).toFixed(1)),
       stability: Math.floor(100 - (i * 20) + Math.random() * 10),
       risk: i > 2 ? 'Timeline collapse possible' : 'Acceptable risk level',
     }));
@@ -645,9 +648,9 @@ You are a Temporal Paradox Resolution Specialist. Help users understand the comp
 
 📜 Temporal Mechanics:
 ⚙️ Active Laws: ${this.temporalRules.length}
-🌊 Butterfly Amplification: ${(this.temporalConstants.butterfly_amplification * 100).toFixed(0)}%
-🏔️ Temporal Inertia: ${(this.temporalConstants.temporal_inertia * 100).toFixed(0)}%
-🛡️ Paradox Resistance: ${(this.temporalConstants.paradox_resistance * 100).toFixed(0)}%
+🌊 Butterfly Amplification: ${(this.temporalConstants['butterfly_amplification'] * 100).toFixed(0)}%
+🏔️ Temporal Inertia: ${(this.temporalConstants['temporal_inertia'] * 100).toFixed(0)}%
+🛡️ Paradox Resistance: ${(this.temporalConstants['paradox_resistance'] * 100).toFixed(0)}%
 
 💡 Enhanced Features Available:
 • /visualize [type] - Generate temporal visualizations

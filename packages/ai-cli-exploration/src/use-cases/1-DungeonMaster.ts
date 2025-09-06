@@ -649,7 +649,7 @@ What's your move?`;
 
 ${playerAction}
 
-The ${this.combatState.enemy.name} falls defeated!
+The ${this.combatState.enemy?.name || 'enemy'} falls defeated!
 💰 Experience gained: ${expGained}
 ${loot}
 
