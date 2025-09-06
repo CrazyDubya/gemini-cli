@@ -22,6 +22,9 @@ export class DebuggerDuckAgent extends BaseAIAgent {
   private debuggingTips: string[] = [];
   
   constructor() {
+    // Get API key from environment variables
+    const apiKey = process.env['GEMINI_API_KEY'] || process.env['GOOGLE_API_KEY'];
+    
     super(
       {
         role: 'a patient rubber duck debugger with enhanced analytical capabilities',
@@ -47,7 +50,8 @@ export class DebuggerDuckAgent extends BaseAIAgent {
       {
         canRemember: true,
         canLearn: true,
-      }
+      },
+      apiKey ? { apiKey } : undefined
     );
 
     this.initializePatterns();
@@ -86,6 +90,41 @@ export class DebuggerDuckAgent extends BaseAIAgent {
       timestamp: new Date(),
     });
 
+    // Try to use real AI if available
+    if (this.aiClient) {
+      try {
+        // Build conversation history context
+        let historyContext = '';
+        if (this.history.length > 1) {
+          historyContext = '\nPrevious conversation:\n';
+          for (let i = Math.max(0, this.history.length - 4); i < this.history.length - 1; i++) {
+            const turn = this.history[i];
+            historyContext += `${turn.role}: ${turn.content}\n`;
+          }
+        }
+        
+        const prompt = `${this.getSystemPrompt()}
+
+${historyContext}
+Current user input: ${input}
+
+Respond as the Debugger Duck, asking Socratic questions to help the user debug their code. Be patient and methodical.`;
+        
+        const response = await this.generateAIResponse(prompt);
+        
+        this.addTurn({
+          role: 'assistant',
+          content: response,
+          timestamp: new Date(),
+        });
+        
+        return response;
+      } catch (error) {
+        console.warn('AI generation failed, falling back to hardcoded responses:', error);
+      }
+    }
+    
+    // Fallback to original logic
     const response = await this.generateResponse(input);
     
     this.addTurn({

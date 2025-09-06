@@ -21,6 +21,22 @@ This will open an interactive menu where you can:
 - Save and resume sessions
 - Switch between agents seamlessly
 
+## 🔐 Using Real AI (Optional)
+
+To use real AI instead of simulated responses:
+
+1. Get a free API key from [Google AI Studio](https://aistudio.google.com/apikey)
+2. Set the environment variable:
+   ```bash
+   export GEMINI_API_KEY=your-api-key-here
+   ```
+3. Run the demo:
+   ```bash
+   npm run dev
+   ```
+
+When the API key is present, agents will use real AI for responses. When absent, they fall back to simulated responses.
+
 ## 🎮 Interactive Features
 
 ### Main Menu
@@ -139,6 +155,7 @@ ai-cli-exploration/
 - **Memory System**: Can remember and recall information across conversations
 - **History Compression**: Automatically compresses long conversations to maintain context
 - **Decision Making**: Agents can make contextual decisions based on their role
+- **Real AI Integration**: Uses Google's Gemini API when API key is provided
 
 ### Common Capabilities
 - Stateful conversation management
@@ -157,11 +174,14 @@ cd packages/ai-cli-exploration
 # Install dependencies
 npm install
 
-# Run the showcase
+# Run the showcase (simulated AI)
 npm run dev
 
 # Or directly with tsx
 npx tsx src/showcase.ts
+
+# Run with real AI (requires API key)
+npx tsx demo-real-ai.ts
 ```
 
 ## Key Innovations
@@ -172,6 +192,7 @@ npx tsx src/showcase.ts
 4. **Creative Expression**: Agents can generate poetry, narratives, and metaphorical explanations
 5. **Stateful Interactions**: Maintains context and memory across conversation turns
 6. **Pattern Recognition**: Detects patterns in user input and responds appropriately
+7. **Real AI Integration**: Seamlessly switches between simulated and real AI responses
 
 ## Why This Matters
 
@@ -211,6 +232,7 @@ These use cases could be integrated into Gemini CLI as:
 - **Extensible Framework**: Easy to add new agents or capabilities
 - **Memory Management**: Automatic history compression for long conversations
 - **Pattern Matching**: Intelligent input parsing and response generation
+- **Real AI Integration**: Seamless switching between simulated and real AI
 
 ## Conclusion
 
