@@ -47,12 +47,12 @@
     "open": "^10.1.2",
     "react": "^19.1.0",
     "read-package-up": "^11.0.0",
-    "simple-git": "^3.32.3",
+    "simple-git": "^4.0.2",
     "shell-quote": "^1.8.3",
     "string-width": "^7.1.0",
     "strip-ansi": "^7.1.0",
     "strip-json-comments": "^3.1.1",
-    "undici": "^7.24.0",
+    "undici": "^7.29.1",
     "update-notifier": "^7.3.1",
     "yargs": "^17.7.2",
     "zod": "^3.23.8"
@@ -76,7 +76,7 @@
     "pretty-format": "^30.0.2",
     "react-dom": "^19.1.0",
     "typescript": "^5.3.3",
-    "vitest": "^3.1.1"
+    "vitest": "^5.0.3"
   },
   "engines": {
     "node": ">=20"
