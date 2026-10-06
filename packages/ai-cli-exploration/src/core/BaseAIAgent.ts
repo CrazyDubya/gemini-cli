@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { AIClient } from './AIClient.js';
+
 export interface AIContext {
   role: string;
   personality?: string;
@@ -35,6 +37,11 @@ export interface AgentError {
   recoverable: boolean;
 }
 
+export interface AIConfig {
+  apiKey: string;
+  model?: string;
+}
+
 export class AgentException extends Error {
   public readonly code: string;
   public readonly recoverable: boolean;
@@ -58,10 +65,16 @@ export abstract class BaseAIAgent {
   protected memory: Map<string, unknown> = new Map();
   protected errorHistory: AgentError[] = [];
   protected isHealthy = true;
+  protected aiClient: AIClient | null = null;
 
-  constructor(context: AIContext, capabilities: AgentCapabilities = {}) {
+  constructor(context: AIContext, capabilities: AgentCapabilities = {}, config?: AIConfig) {
     this.context = context;
     this.capabilities = capabilities;
+    
+    // Initialize AI client if config is provided
+    if (config?.apiKey) {
+      this.aiClient = new AIClient(config.apiKey, config.model);
+    }
   }
 
   abstract processInput(input: string): Promise<string>;
@@ -274,5 +287,17 @@ Error count: ${this.errorHistory.length}`;
       errorCount: this.errorHistory.length,
       lastError: this.errorHistory[this.errorHistory.length - 1]
     };
+  }
+
+  protected async generateAIResponse(prompt: string): Promise<string> {
+    if (!this.aiClient) {
+      throw new AgentException('NO_AI_CLIENT', 'AI client not initialized');
+    }
+    
+    try {
+      return await this.aiClient.generateContent(prompt);
+    } catch (error) {
+      throw new AgentException('AI_GENERATION_ERROR', `Failed to generate AI response: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 }

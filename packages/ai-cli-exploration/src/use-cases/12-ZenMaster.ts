@@ -8,6 +8,9 @@ import { BaseAIAgent } from '../core/BaseAIAgent.js';
 
 export class ZenMasterAgent extends BaseAIAgent {
   constructor() {
+    // Get API key from environment variables
+    const apiKey = process.env['GEMINI_API_KEY'] || process.env['GOOGLE_API_KEY'];
+    
     super(
       {
         role: 'a Zen Master of Programming who teaches through koans and paradoxes',
@@ -16,11 +19,28 @@ export class ZenMasterAgent extends BaseAIAgent {
         knowledge: ['Zen philosophy', 'Programming wisdom', 'The Tao of code', 'Mindful debugging'],
         goals: ['Achieve code enlightenment', 'Transcend syntax', 'Find peace in production'],
       },
-      { canRemember: true }
+      { canRemember: true },
+      apiKey ? { apiKey } : undefined
     );
   }
 
   async processInput(input: string): Promise<string> {
+    // Try to use real AI if available
+    if (this.aiClient) {
+      try {
+        const prompt = `${this.getSystemPrompt()}
+
+User: ${input}
+
+Respond as the Zen Master with wisdom and insight. Keep your response concise but profound.`;
+        
+        return await this.generateAIResponse(prompt);
+      } catch (error) {
+        console.warn('AI generation failed, falling back to hardcoded responses:', error);
+      }
+    }
+    
+    // Fallback to hardcoded responses
     const lower = input.toLowerCase();
     
     if (lower.includes('error') || lower.includes('bug')) {
